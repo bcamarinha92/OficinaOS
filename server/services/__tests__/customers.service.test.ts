@@ -115,6 +115,81 @@ describe("create", () => {
     expect(call.update).not.toHaveProperty("name");
     expect(call.update).toHaveProperty("whatsappConsent", true);
   });
+
+  it("stores trimmed address, city and notes, blank ones as null", async () => {
+    (prisma.customer.upsert as ReturnType<typeof vi.fn>).mockResolvedValue({
+      id: "cust-1",
+    });
+
+    await create(prisma, {
+      address: "  Rua das Flores 12  ",
+      city: "   ",
+      name: "Rui",
+      notes: " Cliente antigo ",
+      phone: "912345678",
+    });
+
+    const call = (prisma.customer.upsert as ReturnType<typeof vi.fn>).mock
+      .calls[0][0];
+    expect(call.create).toMatchObject({
+      address: "Rua das Flores 12",
+      city: null,
+      notes: "Cliente antigo",
+    });
+  });
+
+  it("fills address, city and notes on a reused customer without clearing blanks", async () => {
+    (prisma.$queryRaw as ReturnType<typeof vi.fn>).mockResolvedValue([
+      { id: "cust-9", name: "Maria Silva", phone: "912345678" },
+    ]);
+    (prisma.customer.upsert as ReturnType<typeof vi.fn>).mockResolvedValue({
+      id: "cust-9",
+    });
+
+    await create(prisma, {
+      address: "Rua Nova 3",
+      city: "",
+      name: "Maria S.",
+      phone: "912 345 678",
+      useExisting: true,
+    });
+
+    const call = (prisma.customer.upsert as ReturnType<typeof vi.fn>).mock
+      .calls[0][0];
+    expect(call.update).toHaveProperty("address", "Rua Nova 3");
+    expect(call.update).not.toHaveProperty("city");
+    expect(call.update).not.toHaveProperty("notes");
+  });
+
+  it("never overwrites address, city or notes a reused customer already has", async () => {
+    (prisma.$queryRaw as ReturnType<typeof vi.fn>).mockResolvedValue([
+      { id: "cust-9", name: "Maria Silva", phone: "912345678" },
+    ]);
+    (prisma.customer.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue({
+      address: null,
+      city: "Faro",
+      id: "cust-9",
+      notes: "Não dar crédito",
+    });
+    (prisma.customer.upsert as ReturnType<typeof vi.fn>).mockResolvedValue({
+      id: "cust-9",
+    });
+
+    await create(prisma, {
+      address: "Rua Nova 3",
+      city: "Loulé",
+      name: "Maria S.",
+      notes: "VIP",
+      phone: "912 345 678",
+      useExisting: true,
+    });
+
+    const call = (prisma.customer.upsert as ReturnType<typeof vi.fn>).mock
+      .calls[0][0];
+    expect(call.update).toHaveProperty("address", "Rua Nova 3");
+    expect(call.update).not.toHaveProperty("city");
+    expect(call.update).not.toHaveProperty("notes");
+  });
 });
 
 describe("update", () => {
@@ -151,6 +226,30 @@ describe("update", () => {
     expect(updateCall[0].data).toHaveProperty("name", "New Name");
     expect(updateCall[0].data).not.toHaveProperty("email");
     expect(updateCall[0].data).not.toHaveProperty("phone");
+  });
+
+  it("trims address, city and notes and clears them with an empty string", async () => {
+    (prisma.customer.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue({
+      id: "cust-1",
+      name: "Rui",
+    });
+    (prisma.customer.update as ReturnType<typeof vi.fn>).mockResolvedValue({
+      id: "cust-1",
+    });
+
+    await update(prisma, "cust-1", {
+      address: " Rua Velha 1 ",
+      city: "",
+      notes: "  ",
+    });
+
+    const updateCall = (prisma.customer.update as ReturnType<typeof vi.fn>).mock
+      .calls[0];
+    expect(updateCall[0].data).toEqual({
+      address: "Rua Velha 1",
+      city: null,
+      notes: null,
+    });
   });
 
   it("returns existing customer when no updates provided", async () => {

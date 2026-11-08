@@ -92,6 +92,8 @@ export interface ReceiptStrings {
   label: string;
   loaner: string;
   loanerYes: string;
+  /** Fork hdt: receipts are not fiscal documents. */
+  notInvoice: string;
   paid: string;
   paidDeposit: string;
   paymentMethods: Record<string, string>;
@@ -123,6 +125,7 @@ const RECEIPT_STRINGS: Record<string, ReceiptStrings> = {
     label: "Etiqueta",
     loaner: "Equip. empréstimo",
     loanerYes: "Sim",
+    notInvoice: "Este documento não serve de fatura",
     paid: "Pago",
     paidDeposit: "Pago (sinal)",
     paymentMethods: {
@@ -160,6 +163,7 @@ const RECEIPT_STRINGS: Record<string, ReceiptStrings> = {
     label: "Label",
     loaner: "Loaner device",
     loanerYes: "Yes",
+    notInvoice: "This document is not an invoice",
     paid: "Paid",
     paidDeposit: "Paid (deposit)",
     paymentMethods: {
@@ -197,6 +201,7 @@ const RECEIPT_STRINGS: Record<string, ReceiptStrings> = {
     label: "Étiquette",
     loaner: "Appareil de prêt",
     loanerYes: "Oui",
+    notInvoice: "Ce document ne constitue pas une facture",
     paid: "Payé",
     paidDeposit: "Payé (acompte)",
     paymentMethods: {
@@ -234,6 +239,7 @@ const RECEIPT_STRINGS: Record<string, ReceiptStrings> = {
     label: "Etiqueta",
     loaner: "Dispositivo de préstamo",
     loanerYes: "Sí",
+    notInvoice: "Este documento no sirve como factura",
     paid: "Pagado",
     paidDeposit: "Pagado (anticipo)",
     paymentMethods: {
@@ -265,6 +271,11 @@ const RECEIPT_STRINGS: Record<string, ReceiptStrings> = {
 
 export function receiptStrings(locale?: string): ReceiptStrings {
   return RECEIPT_STRINGS[locale ?? ""] ?? RECEIPT_STRINGS.pt;
+}
+
+/** Fork hdt: fiscal invoices come from certified software, not from here. */
+function notInvoiceHtml(s: ReceiptStrings): string {
+  return `<p class="not-invoice" style="text-align:center;font-size:10px;font-weight:700;margin:10px 0 0">${esc(s.notInvoice)}</p>`;
 }
 
 // ── Print preferences (ShopSettings) ────────────────────────────────────
@@ -668,9 +679,11 @@ function renderThermalReceiptDocument(ctx: ReceiptRenderContext): string {
   const qrImg = ctx.qrBuf
     ? `<div class="qr"><img src="data:image/png;base64,${ctx.qrBuf.toString("base64")}" alt="QR Code" /></div>`
     : `<div class="qr" style="color:#999;font-size:10px">${s.qrUnavailable}</div>`;
-  const footerHtml = settings?.receiptFooter
-    ? `<div class="sep"></div><p style="text-align:left">${escMultiline(settings.receiptFooter)}</p>`
-    : "";
+  const footerHtml = `${
+    settings?.receiptFooter
+      ? `<div class="sep"></div><p style="text-align:left">${escMultiline(settings.receiptFooter)}</p>`
+      : ""
+  }${notInvoiceHtml(s)}`;
   const thermal = THERMAL_PRESETS[prefs.paper === "58mm" ? "58mm" : "80mm"];
 
   return `<!doctype html>
@@ -785,13 +798,12 @@ ${
       ? `<div class="qr"><img src="data:image/png;base64,${ctx.qrBuf.toString("base64")}" alt="QR" /><p>${s.scanQr}</p></div>`
       : "";
 
-  const footerHtml = settings?.receiptFooter
-    ? `<p>${escMultiline(settings.receiptFooter)}</p>`
-    : "";
-  const footHtml =
-    footerHtml || qrHtml
-      ? `<div class="foot"><div class="txt">${footerHtml}</div>${qrHtml}</div>`
-      : "";
+  const footerHtml = `${
+    settings?.receiptFooter
+      ? `<p>${escMultiline(settings.receiptFooter)}</p>`
+      : ""
+  }${notInvoiceHtml(s)}`;
+  const footHtml = `<div class="foot"><div class="txt">${footerHtml}</div>${qrHtml}</div>`;
 
   return `<!doctype html>
 <html lang="${ctx.locale}">
@@ -862,9 +874,11 @@ export async function renderSaleReceiptHtml(
   const prefs = prefsFrom(settings);
 
   const date = new Date(sale.createdAt).toLocaleString(s.dateLocale);
-  const footerHtml = settings?.receiptFooter
-    ? `<div class="sep"></div><p style="text-align:left">${escMultiline(settings.receiptFooter)}</p>`
-    : "";
+  const footerHtml = `${
+    settings?.receiptFooter
+      ? `<div class="sep"></div><p style="text-align:left">${escMultiline(settings.receiptFooter)}</p>`
+      : ""
+  }${notInvoiceHtml(s)}`;
 
   if (prefs.paper === "a4") {
     const itemRows = sale.items
@@ -908,7 +922,7 @@ export async function renderSaleReceiptHtml(
 <tr class="grand"><td>${s.total}</td><td class="num">${fmtMoney(sale.total, currency)}</td></tr>
 ${payRows}
 </table></div>
-${settings?.receiptFooter ? `<div class="foot"><div class="txt"><p>${escMultiline(settings.receiptFooter)}</p></div></div>` : ""}
+<div class="foot"><div class="txt">${settings?.receiptFooter ? `<p>${escMultiline(settings.receiptFooter)}</p>` : ""}${notInvoiceHtml(s)}</div></div>
 </body></html>`;
   }
 

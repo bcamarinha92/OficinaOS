@@ -339,7 +339,7 @@ describe("processOutbox", () => {
     );
   });
 
-  it("holds SMS entries when the sms entitlement is missing", async () => {
+  function mockSmsShop(overrides: Record<string, unknown>) {
     mocks.findManyOutboxEntries.mockResolvedValue([
       {
         id: "out-sms2",
@@ -355,6 +355,7 @@ describe("processOutbox", () => {
       smsGatewayPasswordEncrypted: "v1:enc",
       smsGatewayUrl: "http://192.168.1.50:8080",
       smsGatewayUser: "sms",
+      ...overrides,
     });
     mocks.decryptSmsConfig.mockReturnValue({
       password: "p",
@@ -366,6 +367,19 @@ describe("processOutbox", () => {
       phone: "0912345678",
       whatsappConsent: true,
     });
+  }
+
+  // Fork hdt: the local SMS gateway does not need the Pro entitlement.
+  it("sends SMS entries without the sms entitlement", async () => {
+    mockSmsShop({ cloudEntitlements: [] });
+
+    await processOutbox(prisma);
+
+    expect(mocks.sendSms).toHaveBeenCalled();
+  });
+
+  it("holds SMS entries while the SMS channel is switched off", async () => {
+    mockSmsShop({ smsEnabled: false });
 
     await processOutbox(prisma);
 

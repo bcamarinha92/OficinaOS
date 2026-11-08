@@ -148,7 +148,9 @@ describe("PUT /api/settings/sms", () => {
     expect(mocks.upsertSmsSettings).toHaveBeenCalled();
   });
 
-  it("rejects enabling without the sms entitlement", async () => {
+  // Fork hdt: the local SMS gateway does not need the Pro entitlement.
+  it("allows enabling without the sms entitlement", async () => {
+    mocks.getSmsSettings.mockResolvedValue({ enabled: false });
     const app = buildApp(fakePrisma({ ...SMS_ROW, cloudEntitlements: [] }));
     const res = await app.inject({
       method: "PUT",
@@ -160,9 +162,8 @@ describe("PUT /api/settings/sms", () => {
       },
       url: "/api/settings/sms",
     });
-    expect(res.statusCode).toBe(402);
-    expect(res.json().code).toBe("CLOUD_MODULE_REQUIRED");
-    expect(mocks.upsertSmsSettings).not.toHaveBeenCalled();
+    expect(res.statusCode).toBe(200);
+    expect(mocks.upsertSmsSettings).toHaveBeenCalled();
   });
 
   it("accepts disabling even without the entitlement", async () => {
@@ -219,16 +220,23 @@ describe("PUT /api/settings/sms", () => {
 });
 
 describe("POST /api/settings/sms/test", () => {
-  it("rejects the test send without the sms entitlement", async () => {
+  // Fork hdt: the local SMS gateway does not need the Pro entitlement.
+  it("allows the test send without the sms entitlement", async () => {
+    mocks.decryptSmsConfig.mockReturnValue({
+      password: "p",
+      url: "http://192.168.1.50:8080",
+      user: "sms",
+    });
+    mocks.sendSms.mockResolvedValue({ success: true });
     const app = buildApp(fakePrisma({ ...SMS_ROW, cloudEntitlements: [] }));
     const res = await app.inject({
       method: "POST",
       payload: { phone: "912345678" },
       url: "/api/settings/sms/test",
     });
-    expect(res.statusCode).toBe(402);
-    expect(res.json().code).toBe("CLOUD_MODULE_REQUIRED");
-    expect(mocks.sendSms).not.toHaveBeenCalled();
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual({ ok: true });
+    expect(mocks.sendSms).toHaveBeenCalled();
   });
 
   it("fails cleanly when the gateway is not configured", async () => {

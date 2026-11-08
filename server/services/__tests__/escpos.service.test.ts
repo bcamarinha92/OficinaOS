@@ -211,3 +211,27 @@ describe("sendToPrinter", () => {
     ).rejects.toThrow("Invalid printer host");
   });
 });
+
+// Fork hdt: receipts are not fiscal documents, so every ticket says so.
+describe("non-invoice notice", () => {
+  it("prints the notice on the job and sale tickets", () => {
+    const job = decode(
+      buildJobReceiptEscPos(SETTINGS, JOB, "https://app.test")
+    );
+    const sale = decode(buildSaleReceiptEscPos(SETTINGS, SALE));
+    expect(job).toContain("Este documento não serve de fatura");
+    expect(sale).toContain("Este documento não serve de fatura");
+  });
+
+  it("wraps the notice to the 58mm paper width", () => {
+    const narrow = { ...SETTINGS, receiptPaper: "58mm" } as ShopSettings;
+    const lines = decode(buildSaleReceiptEscPos(narrow, SALE)).split("\n");
+    const notice = lines.filter(
+      (l) => l.includes("fatura") || l.includes("Este documento")
+    );
+    expect(notice.join(" ")).toContain("Este documento não serve de");
+    for (const line of notice) {
+      expect(line.trim().length).toBeLessThanOrEqual(32);
+    }
+  });
+});

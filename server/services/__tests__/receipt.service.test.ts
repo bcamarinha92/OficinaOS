@@ -1,6 +1,10 @@
 import type { PrismaClient } from "@generated/client";
 import { describe, expect, it, vi } from "vitest";
-import { renderLabelHtml, renderReceiptHtml } from "../receipt.service";
+import {
+  renderLabelHtml,
+  renderReceiptHtml,
+  renderSaleReceiptHtml,
+} from "../receipt.service";
 
 function mockPrisma(settings: Record<string, unknown> | null) {
   return {
@@ -181,5 +185,47 @@ describe("renderLabelHtml label sizes", () => {
     const prisma = mockPrisma({ ...FULL_SETTINGS, labelSize: "62x29" });
     const html = await renderLabelHtml(prisma, BASE_JOB, "", {});
     expect(html).toContain("size: 62mm 29mm");
+  });
+});
+
+// Fork hdt: receipts are not fiscal documents (invoices come from certified
+// software), so every customer receipt says so.
+describe("non-invoice notice", () => {
+  const SALE = {
+    createdAt: new Date("2026-10-09T10:00:00Z"),
+    createdBy: { name: "Maria" },
+    customer: { name: "Cliente", phone: "910000000" },
+    items: [{ lineTotal: 20, name: "Película", quantity: 1 }],
+    payments: [{ amount: 20, method: "CASH", reference: null }],
+    saleCode: "V-2026-001",
+    total: 20,
+  };
+
+  it("prints the notice on the thermal and A4 job receipts", async () => {
+    for (const receiptPaper of ["80mm", "58mm", "a4"]) {
+      const prisma = mockPrisma({ ...FULL_SETTINGS, receiptPaper });
+      const html = await renderReceiptHtml(prisma, BASE_JOB, "", {});
+      expect(html).toContain("Este documento não serve de fatura");
+    }
+  });
+
+  it("prints the notice on the thermal and A4 sale receipts", async () => {
+    for (const receiptPaper of ["80mm", "a4"]) {
+      const prisma = mockPrisma({ ...FULL_SETTINGS, receiptPaper });
+      const html = await renderSaleReceiptHtml(prisma, SALE, "", {});
+      expect(html).toContain("Este documento não serve de fatura");
+    }
+  });
+
+  it("uses the receipt locale", async () => {
+    const html = await renderReceiptHtml(
+      mockPrisma(FULL_SETTINGS),
+      BASE_JOB,
+      "",
+      {
+        locale: "en",
+      }
+    );
+    expect(html).toContain("This document is not an invoice");
   });
 });

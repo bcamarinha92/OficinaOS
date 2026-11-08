@@ -48,6 +48,44 @@ async function phoneMatchClause(
   return ids.length > 0 ? { id: { in: ids } } : null;
 }
 
+const CONTACT_FIELDS = ["address", "city", "notes"] as const;
+type ContactField = (typeof CONTACT_FIELDS)[number];
+
+/** Trimmed address/city/notes; blank values become null. */
+function contactFields(
+  input: CreateCustomerInput
+): Record<ContactField, string | null> {
+  const out = {} as Record<ContactField, string | null>;
+  for (const field of CONTACT_FIELDS) {
+    out[field] = input[field]?.trim() || null;
+  }
+  return out;
+}
+
+/**
+ * Contact fields a reused customer may receive: only those it does not have
+ * yet. A quick-add form must never silently replace staff notes such as
+ * "não dar crédito" — changing them goes through update().
+ */
+async function contactFillsForExisting(
+  prisma: PrismaClient,
+  existingId: string,
+  contact: Record<ContactField, string | null>
+): Promise<Partial<Record<ContactField, string>>> {
+  const provided = CONTACT_FIELDS.filter((field) => contact[field]);
+  if (provided.length === 0) {
+    return {};
+  }
+  const current = await customerFindUnique(prisma, existingId);
+  const fills: Partial<Record<ContactField, string>> = {};
+  for (const field of provided) {
+    if (!current?.[field]) {
+      fills[field] = contact[field] as string;
+    }
+  }
+  return fills;
+}
+
 export async function create(prisma: PrismaClient, input: CreateCustomerInput) {
   const email = input.email?.trim() || null;
 
@@ -82,9 +120,17 @@ export async function create(prisma: PrismaClient, input: CreateCustomerInput) {
   if (taxId) {
     updateData.taxId = taxId;
   }
+  const contact = contactFields(input);
+  if (existing) {
+    Object.assign(
+      updateData,
+      await contactFillsForExisting(prisma, existing.id, contact)
+    );
+  }
 
   const phone = existing?.phone ?? input.phone.trim();
   return await customerUpsert(prisma, { phone }, updateData, {
+    ...contact,
     email,
     name: input.name,
     phone,
@@ -116,6 +162,11 @@ export async function update(
   }
   if (data.taxId !== undefined) {
     updateData.taxId = data.taxId?.trim() || null;
+  }
+  for (const field of CONTACT_FIELDS) {
+    if (data[field] !== undefined) {
+      updateData[field] = data[field]?.trim() || null;
+    }
   }
   if (data.whatsappConsent !== undefined) {
     updateData.whatsappConsent = data.whatsappConsent;

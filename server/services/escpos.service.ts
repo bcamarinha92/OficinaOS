@@ -290,6 +290,8 @@ export function buildJobReceiptEscPos(
     t.sep();
     t.wrap(settings.receiptFooter);
   }
+  // Fork hdt: fiscal invoices come from certified software, not from here.
+  t.wrap(s.notInvoice);
 
   t.segments.push(Buffer.from("\n\n", "ascii"), CUT);
   return Buffer.concat(t.segments);
@@ -334,6 +336,8 @@ export function buildSaleReceiptEscPos(
     t.sep();
     t.wrap(settings.receiptFooter);
   }
+  // Fork hdt: fiscal invoices come from certified software, not from here.
+  t.wrap(s.notInvoice);
 
   t.segments.push(Buffer.from("\n\n", "ascii"), CUT);
   return Buffer.concat(t.segments);

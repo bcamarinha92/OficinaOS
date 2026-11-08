@@ -19,6 +19,10 @@
     "whatsapp_consent": "Quero receber atualizações por WhatsApp sobre a reparação",
     "tax_id": "Número fiscal (NIF)",
     "tax_id_placeholder": "Opcional – para empresas",
+    "address": "Morada",
+    "city": "Localidade",
+    "notes": "Notas",
+    "notes_placeholder": "Só para a equipa — nunca aparece ao cliente",
     "duplicate_phone": "Já existe um cliente com este telefone: {{name}}",
     "use_existing": "Usar cliente existente"
   },

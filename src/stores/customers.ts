@@ -15,12 +15,16 @@ interface CustomerJob {
 }
 
 interface CustomerDetail {
+  address: string | null;
+  city: string | null;
   createdAt: string;
   email: string | null;
   id: string;
   jobs: CustomerJob[];
   name: string;
+  notes: string | null;
   phone: string;
+  taxId: string | null;
   updatedAt: string;
 }
 
@@ -61,8 +65,11 @@ interface CustomersState {
   updateCustomer: (
     id: string,
     data: {
+      address?: string;
+      city?: string;
       email?: string;
       name?: string;
+      notes?: string;
       phone?: string;
       taxId?: string;
       whatsappConsent?: boolean;

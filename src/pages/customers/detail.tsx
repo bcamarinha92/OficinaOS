@@ -1,9 +1,20 @@
 import type { JobStatusType } from "@shared/constants";
+import {
+  CUSTOMER_ADDRESS_MAX,
+  CUSTOMER_CITY_MAX,
+  CUSTOMER_EMAIL_MAX,
+  CUSTOMER_NAME_MAX,
+  CUSTOMER_NOTES_MAX,
+} from "@shared/schemas/customer.schema";
+import { PHONE_MAX_LENGTH } from "@shared/utils/phone";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router";
 import { RecordWorkflow } from "@/components/modules/tasks/record-workflow";
+import { Field } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { Textarea } from "@/components/ui/textarea";
 import { BusinessHistory } from "@/pages/business/history";
 import { useCustomersStore } from "@/stores/customers";
 
@@ -21,6 +32,9 @@ export default function CustomerDetailPage() {
   const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [editEmail, setEditEmail] = useState("");
+  const [editAddress, setEditAddress] = useState("");
+  const [editCity, setEditCity] = useState("");
+  const [editNotes, setEditNotes] = useState("");
 
   useEffect(() => {
     if (id) {
@@ -33,6 +47,9 @@ export default function CustomerDetailPage() {
       setEditName(currentCustomer.name);
       setEditPhone(currentCustomer.phone);
       setEditEmail(currentCustomer.email ?? "");
+      setEditAddress(currentCustomer.address ?? "");
+      setEditCity(currentCustomer.city ?? "");
+      setEditNotes(currentCustomer.notes ?? "");
     }
   }, [currentCustomer]);
 
@@ -73,6 +90,10 @@ export default function CustomerDetailPage() {
         name: editName,
         phone: editPhone,
         email: editEmail || undefined,
+        // "" clears these server-side.
+        address: editAddress,
+        city: editCity,
+        notes: editNotes,
       });
       await fetchCustomer(currentCustomer.id);
       setEditing(false);
@@ -112,49 +133,58 @@ export default function CustomerDetailPage() {
 
         {editing ? (
           <div className="space-y-3">
-            <div>
-              <label
-                className="mb-1 block font-medium text-on-surface-variant text-xs"
-                htmlFor="edit-name"
-              >
-                {t("customer_name_label")}
-              </label>
-              <input
-                className="w-full rounded-lg bg-surface-container-high px-3 py-2 text-on-surface"
+            <Field label={t("customer_name_label")}>
+              <Input
                 id="edit-name"
+                maxLength={CUSTOMER_NAME_MAX}
                 onChange={(e) => setEditName(e.target.value)}
                 value={editName}
               />
-            </div>
-            <div>
-              <label
-                className="mb-1 block font-medium text-on-surface-variant text-xs"
-                htmlFor="edit-phone"
-              >
-                {t("customer_phone")}
-              </label>
-              <input
-                className="w-full rounded-lg bg-surface-container-high px-3 py-2 text-on-surface"
+            </Field>
+            <Field label={t("customer_phone")}>
+              <Input
                 dir="ltr"
                 id="edit-phone"
+                maxLength={PHONE_MAX_LENGTH}
                 onChange={(e) => setEditPhone(e.target.value)}
+                type="tel"
                 value={editPhone}
               />
-            </div>
-            <div>
-              <label
-                className="mb-1 block font-medium text-on-surface-variant text-xs"
-                htmlFor="edit-email"
-              >
-                {t("customer_email")}
-              </label>
-              <input
-                className="w-full rounded-lg bg-surface-container-high px-3 py-2 text-on-surface"
+            </Field>
+            <Field label={t("customer_email")}>
+              <Input
                 id="edit-email"
+                maxLength={CUSTOMER_EMAIL_MAX}
                 onChange={(e) => setEditEmail(e.target.value)}
+                type="email"
                 value={editEmail}
               />
-            </div>
+            </Field>
+            <Field label={t("add_customer_modal.address")}>
+              <Input
+                autoComplete="street-address"
+                maxLength={CUSTOMER_ADDRESS_MAX}
+                onChange={(e) => setEditAddress(e.target.value)}
+                value={editAddress}
+              />
+            </Field>
+            <Field label={t("add_customer_modal.city")}>
+              <Input
+                autoComplete="address-level2"
+                maxLength={CUSTOMER_CITY_MAX}
+                onChange={(e) => setEditCity(e.target.value)}
+                value={editCity}
+              />
+            </Field>
+            <Field label={t("add_customer_modal.notes")}>
+              <Textarea
+                maxLength={CUSTOMER_NOTES_MAX}
+                onChange={(e) => setEditNotes(e.target.value)}
+                placeholder={t("add_customer_modal.notes_placeholder")}
+                rows={3}
+                value={editNotes}
+              />
+            </Field>
             <button
               className="rounded-lg bg-primary px-4 py-2 font-bold text-on-primary text-sm"
               onClick={handleSave}
@@ -178,6 +208,26 @@ export default function CustomerDetailPage() {
                 </span>
                 {currentCustomer.email}
               </p>
+            )}
+            {(currentCustomer.address || currentCustomer.city) && (
+              <p className="text-on-surface-variant">
+                <span className="material-symbols-outlined me-2 align-middle text-sm">
+                  home
+                </span>
+                {[currentCustomer.address, currentCustomer.city]
+                  .filter(Boolean)
+                  .join(", ")}
+              </p>
+            )}
+            {currentCustomer.notes && (
+              <div className="mt-3 rounded-lg bg-surface-container p-3">
+                <p className="mb-1 font-medium text-on-surface-variant text-xs">
+                  {t("add_customer_modal.notes")}
+                </p>
+                <p className="whitespace-pre-line text-on-surface text-sm">
+                  {currentCustomer.notes}
+                </p>
+              </div>
             )}
           </div>
         )}

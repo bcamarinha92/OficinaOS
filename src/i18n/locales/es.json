@@ -19,6 +19,10 @@
     "whatsapp_consent": "Enviarme actualizaciones de estado de WhatsApp sobre mi reparación",
     "tax_id": "Número fiscal (NIF)",
     "tax_id_placeholder": "Opcional — para empresas",
+    "address": "Dirección",
+    "city": "Localidad",
+    "notes": "Notas",
+    "notes_placeholder": "Solo para el equipo — nunca se muestra al cliente",
     "duplicate_phone": "Ya existe un cliente con este teléfono: {{name}}",
     "use_existing": "Usar cliente existente"
   },

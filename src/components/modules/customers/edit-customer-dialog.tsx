@@ -1,9 +1,15 @@
+import {
+  CUSTOMER_ADDRESS_MAX,
+  CUSTOMER_CITY_MAX,
+  CUSTOMER_NOTES_MAX,
+} from "@shared/schemas/customer.schema";
 import type { Customer } from "@shared/types";
 import { isValidPhone } from "@shared/utils/phone";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useModalEffects } from "@/hooks/use-modal-effects";
 import { useCustomersStore } from "@/stores/customers";
 
@@ -15,11 +21,35 @@ interface EditCustomerDialogProps {
 }
 
 interface FormData {
+  address: string;
+  city: string;
   email: string;
   name: string;
+  notes: string;
   phone: string;
   taxId: string;
   whatsappConsent: boolean;
+}
+
+const OPTIONAL_TEXT_FIELDS = [
+  "email",
+  "taxId",
+  "address",
+  "city",
+  "notes",
+] as const;
+
+function formFromCustomer(customer: Customer): FormData {
+  return {
+    address: customer.address ?? "",
+    city: customer.city ?? "",
+    email: customer.email ?? "",
+    name: customer.name,
+    notes: customer.notes ?? "",
+    phone: customer.phone,
+    taxId: customer.taxId ?? "",
+    whatsappConsent: customer.whatsappConsent ?? false,
+  };
 }
 
 function buildUpdatePayload(
@@ -33,11 +63,11 @@ function buildUpdatePayload(
   if (form.phone.trim() !== customer.phone) {
     data.phone = form.phone.trim();
   }
-  if ((form.email.trim() || null) !== (customer.email ?? null)) {
-    data.email = form.email.trim();
-  }
-  if ((form.taxId.trim() || null) !== (customer.taxId ?? null)) {
-    data.taxId = form.taxId.trim();
+  // "" clears the field server-side.
+  for (const field of OPTIONAL_TEXT_FIELDS) {
+    if ((form[field].trim() || null) !== (customer[field] ?? null)) {
+      data[field] = form[field].trim();
+    }
   }
   if (form.whatsappConsent !== (customer.whatsappConsent ?? false)) {
     data.whatsappConsent = String(form.whatsappConsent);
@@ -52,13 +82,7 @@ export default function EditCustomerDialog({
   onSaved,
 }: EditCustomerDialogProps) {
   const { t } = useTranslation();
-  const [form, setForm] = useState<FormData>({
-    email: customer.email ?? "",
-    name: customer.name,
-    phone: customer.phone,
-    taxId: customer.taxId ?? "",
-    whatsappConsent: customer.whatsappConsent ?? false,
-  });
+  const [form, setForm] = useState<FormData>(() => formFromCustomer(customer));
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const updateCustomer = useCustomersStore((s) => s.updateCustomer);
@@ -71,13 +95,7 @@ export default function EditCustomerDialog({
     if (!open) {
       return;
     }
-    setForm({
-      email: customer.email ?? "",
-      name: customer.name,
-      phone: customer.phone,
-      taxId: customer.taxId ?? "",
-      whatsappConsent: customer.whatsappConsent ?? false,
-    });
+    setForm(formFromCustomer(customer));
     setSubmitError(null);
   }, [open, customer]);
 
@@ -204,6 +222,41 @@ export default function EditCustomerDialog({
                 }
                 placeholder={t("add_customer_modal.tax_id_placeholder")}
                 value={form.taxId}
+              />
+            </Field>
+
+            <Field label={t("add_customer_modal.address")}>
+              <Input
+                autoComplete="street-address"
+                maxLength={CUSTOMER_ADDRESS_MAX}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, address: e.target.value }))
+                }
+                value={form.address}
+              />
+            </Field>
+
+            <Field label={t("add_customer_modal.city")}>
+              <Input
+                autoComplete="address-level2"
+                maxLength={CUSTOMER_CITY_MAX}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, city: e.target.value }))
+                }
+                value={form.city}
+              />
+            </Field>
+
+            <Field label={t("add_customer_modal.notes")}>
+              <Textarea
+                className="placeholder:text-outline"
+                maxLength={CUSTOMER_NOTES_MAX}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, notes: e.target.value }))
+                }
+                placeholder={t("add_customer_modal.notes_placeholder")}
+                rows={3}
+                value={form.notes}
               />
             </Field>
 

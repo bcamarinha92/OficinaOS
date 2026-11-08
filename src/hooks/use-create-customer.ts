@@ -10,8 +10,11 @@ interface CreatedCustomer {
 }
 
 interface CreateCustomerInput {
+  address?: string;
+  city?: string;
   email?: string;
   name: string;
+  notes?: string;
   phone: string;
   taxId?: string;
   useExisting?: boolean;

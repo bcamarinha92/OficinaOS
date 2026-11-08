@@ -6,9 +6,26 @@ import { phoneSchema } from "./phone.schema";
 export const CUSTOMER_NAME_MAX = 120;
 export const CUSTOMER_EMAIL_MAX = 254;
 export const CUSTOMER_TAX_ID_MAX = 20;
+export const CUSTOMER_ADDRESS_MAX = 200;
+export const CUSTOMER_CITY_MAX = 120;
+export const CUSTOMER_NOTES_MAX = 5000;
 const SEARCH_MAX = 100;
 
+/** Optional free-text field; "" lets a form clear it. */
+function optionalText(max: number) {
+  return z.string().trim().max(max).optional().or(z.literal(""));
+}
+
+// Postal address and internal notes — optional, staff-only (never shown on
+// public pages or receipts).
+const customerContactFields = {
+  address: optionalText(CUSTOMER_ADDRESS_MAX),
+  city: optionalText(CUSTOMER_CITY_MAX),
+  notes: optionalText(CUSTOMER_NOTES_MAX),
+};
+
 export const createCustomerSchema = z.object({
+  ...customerContactFields,
   email: z
     .string()
     .max(CUSTOMER_EMAIL_MAX)
@@ -37,6 +54,7 @@ export const createCustomerSchema = z.object({
 export type CreateCustomerInput = z.infer<typeof createCustomerSchema>;
 
 export const updateCustomerSchema = z.object({
+  ...customerContactFields,
   name: z
     .string()
     .trim()

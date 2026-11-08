@@ -449,6 +449,7 @@ export async function getSmsSettings(prisma: PrismaClient) {
     hasPassword: Boolean(row?.smsGatewayPasswordEncrypted),
     // Módulo Pro "sms" — sem entitlement a UI mostra o bloco locked e os
     // envios param (notification-dispatch / outbox revalidam também).
+    // Fork hdt: sempre true — ver LOCALLY_ENABLED_MODULES.
     moduleEnabled: isModuleEnabled(row, "sms"),
     // Path do webhook inbound — o host depende de como o staff acede à
     // app; a UI compõe o URL completo com window.location.origin.

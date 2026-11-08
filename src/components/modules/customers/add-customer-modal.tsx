@@ -1,3 +1,8 @@
+import {
+  CUSTOMER_ADDRESS_MAX,
+  CUSTOMER_CITY_MAX,
+  CUSTOMER_NOTES_MAX,
+} from "@shared/schemas/customer.schema";
 import { isValidPhone } from "@shared/utils/phone";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -5,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import ConfirmDiscardDialog from "@/components/ui/confirm-discard-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useCreateCustomer } from "@/hooks/use-create-customer";
 import { useModalEffects } from "@/hooks/use-modal-effects";
 
@@ -15,8 +21,11 @@ interface AddCustomerModalProps {
 }
 
 const INITIAL_FORM = {
+  address: "",
+  city: "",
   email: "",
   name: "",
+  notes: "",
   phone: "",
   taxId: "",
   whatsappConsent: false,
@@ -25,12 +34,8 @@ const INITIAL_FORM = {
 type FieldErrors = Partial<Record<keyof typeof INITIAL_FORM, string>>;
 
 function isDirty(form: typeof INITIAL_FORM): boolean {
-  return (
-    form.name !== INITIAL_FORM.name ||
-    form.phone !== INITIAL_FORM.phone ||
-    form.email !== INITIAL_FORM.email ||
-    form.taxId !== INITIAL_FORM.taxId ||
-    form.whatsappConsent !== INITIAL_FORM.whatsappConsent
+  return (Object.keys(INITIAL_FORM) as (keyof typeof INITIAL_FORM)[]).some(
+    (key) => form[key] !== INITIAL_FORM[key]
   );
 }
 
@@ -113,6 +118,9 @@ export default function AddCustomerModal({
         phone: form.phone.trim(),
         email: form.email.trim() || undefined,
         taxId: form.taxId.trim() || undefined,
+        address: form.address.trim() || undefined,
+        city: form.city.trim() || undefined,
+        notes: form.notes.trim() || undefined,
         whatsappConsent: form.whatsappConsent || undefined,
       });
       setForm(INITIAL_FORM);
@@ -237,6 +245,46 @@ export default function AddCustomerModal({
                 onChange={(e) => updateForm("taxId", e.target.value)}
                 placeholder={t("add_customer_modal.tax_id_placeholder")}
                 value={form.taxId}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="add-customer-address">
+                {t("add_customer_modal.address")}
+              </Label>
+              <Input
+                autoComplete="street-address"
+                id="add-customer-address"
+                maxLength={CUSTOMER_ADDRESS_MAX}
+                onChange={(e) => updateForm("address", e.target.value)}
+                value={form.address}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="add-customer-city">
+                {t("add_customer_modal.city")}
+              </Label>
+              <Input
+                autoComplete="address-level2"
+                id="add-customer-city"
+                maxLength={CUSTOMER_CITY_MAX}
+                onChange={(e) => updateForm("city", e.target.value)}
+                value={form.city}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="add-customer-notes">
+                {t("add_customer_modal.notes")}
+              </Label>
+              <Textarea
+                id="add-customer-notes"
+                maxLength={CUSTOMER_NOTES_MAX}
+                onChange={(e) => updateForm("notes", e.target.value)}
+                placeholder={t("add_customer_modal.notes_placeholder")}
+                rows={3}
+                value={form.notes}
               />
             </div>
           </div>

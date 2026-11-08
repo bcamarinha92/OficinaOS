@@ -118,6 +118,7 @@ function SmsCard({
     : null;
   // Sem o módulo Pro "sms" o card mostra o estado locked — o backend
   // recusa o enable e os envios revalidam o entitlement no dispatch.
+  // Fork hdt: o "sms" está sempre ativo (server/utils/modules.ts).
   const moduleLocked = smsSettings?.moduleEnabled === false;
 
   return (

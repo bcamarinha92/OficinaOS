@@ -275,6 +275,11 @@ model Customer {
   // NIF — needed to issue proper invoices (fatura/fatura-recibo) instead
   // of a simplified "consumidor final" document.
   taxId                String?
+  // Postal address and internal staff notes — optional, never shown on
+  // public pages or receipts.
+  address              String?               @db.VarChar(200)
+  city                 String?               @db.VarChar(120)
+  notes                String?               @db.Text
   // WhatsApp status updates are only sent when the customer opted in.
   whatsappConsent      Boolean               @default(false)
   whatsappConsentAt    DateTime?             @db.Timestamptz
